@@ -131,9 +131,10 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
   <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
   <label class="row">الجودة
     <select id="mode">
-      <option value="17">عالية جداً (أبطأ)</option>
-      <option value="19" selected>متوازنة</option>
-      <option value="21">سريعة (حجم أصغر)</option>
+      <option value="17">عالية جداً (الأبطأ)</option>
+      <option value="19">متوازنة</option>
+      <option value="21" selected>سريعة</option>
+      <option value="22">فائقة السرعة (حجم أكبر)</option>
     </select>
   </label>
   <label class="row"><input type="checkbox" id="blurbg" checked> الفيديو الأفقي على خلفية مموّهة بدل القص</label>
@@ -153,20 +154,7 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
   <span class="badge" id="saved"></span>
   <div class="info" id="outInfo"></div>
   <div class="phone"><video id="player" controls playsinline></video></div>
-  <button id="dl" class="ghost">حفظ الفيديو فقط</button>
-</div>
-<div id="post" class="card hide">
-  <h2>النشر على تيك توك</h2>
-  <textarea id="cap" maxlength="2200" placeholder="اكتب العنوان والهاشتاقات هنا"></textarea>
-  <label class="row">انشر بعد
-    <select id="delay"><option value="5">5 ثوانٍ</option><option value="10" selected>10 ثوانٍ</option><option value="30">30 ثانية</option></select>
-  </label>
-  <div class="ringwrap" id="ringwrap">
-    <div class="ring"><svg width="84" height="84" viewBox="0 0 84 84"><circle class="bg" cx="42" cy="42" r="36"/><circle class="fg" id="fg" cx="42" cy="42" r="36" stroke-dasharray="226" stroke-dashoffset="0"/></svg><b id="count">10</b></div>
-    <button id="cancel" class="ghost" style="width:auto">إلغاء</button>
-  </div>
-  <button id="postGo" class="hot">ابدأ العد التنازلي للنشر</button>
-  <p class="note" id="postNote">عند انتهاء العد يُحفظ الفيديو وينسخ العنوان، ثم تُفتح صفحة الرفع في تيك توك. يجب أن تكون مسجل دخولك في المتصفح.</p>
+  <button id="dl">حفظ الفيديو</button>
   <button id="again" class="ghost" style="margin-top:12px">فيديو جديد</button>
 </div>
 </div>
@@ -175,7 +163,7 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
 <div class="cols">
 <div class="card"><div class="ico">1</div><h3>اختر الفيديو</h3><p>نحلل الدقة والحركة والتفاصيل ونقترح أنسب إعدادات.</p></div>
 <div class="card"><div class="ico">2</div><h3>نحسّنه على جهازك</h3><p>يُعاد ترميزه بصيغة H.264 المناسبة لتيك توك دون تكبير الدقة.</p></div>
-<div class="card"><div class="ico">3</div><h3>انشره</h3><p>اكتب العنوان، وبعد العد التنازلي تُفتح صفحة الرفع جاهزة.</p></div>
+<div class="card"><div class="ico">3</div><h3>احفظه وانشره</h3><p>احفظ الفيديو الجاهز وارفعه على تيك توك بنفسك.</p></div>
 </div></section>
 <section class="info-sec" id="why">
 <h2>ليش نقاء؟</h2>
@@ -188,7 +176,7 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
 <h2>أسئلة شائعة</h2>
 <details><summary>هل الجودة تصير مثالية على تيك توك؟</summary><p>تيك توك يعيد ضغط أي فيديو. نحن نعطيه ملفاً نظيفاً ليقلل الضرر، لكن لا يمكن منعه كلياً.</p></details>
 <details><summary>كم تاخذ المعالجة؟</summary><p>تعتمد على جهازك وطول الفيديو. الفيديوهات القصيرة أسرع، والكبيرة جداً قد تفشل.</p></details>
-<details><summary>هل يُنشر الفيديو تلقائياً؟</summary><p>نجهّز كل شيء ونفتح لك تيك توك، وتضغط نشر بنفسك بعد العد التنازلي.</p></details>
+<details><summary>هل الفيديو يطابق متطلبات تيك توك؟</summary><p>نعم. يخرج دائماً بصيغة H.264 وصوت AAC وألوان قياسية وعدد إطارات ثابت، حتى لو زاد حجم الملف.</p></details>
 </section>
 <footer>
 <div class="logo"><svg><use href="#logo"/></svg>نقاء</div>
@@ -365,7 +353,7 @@ async function pick(f) {
     `<div>معدل البت: <b>${kbps} kbps</b></div>`;
   $('anaNote').textContent = '';
   $('meta').classList.remove('hide');
-  ['result', 'post', 'prog'].forEach(i => $(i).classList.add('hide'));
+  ['result', 'prog'].forEach(i => $(i).classList.add('hide'));
   $('go').disabled = false;
   $('meta').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -381,7 +369,7 @@ function buildFilter() {
   const landscape = info.w > info.h;
   if (landscape && $('blurbg').checked) {
     return '[0:v]split[a][b];' +
-      '[a]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24:6[bg];' +
+      '[a]scale=270:480:force_original_aspect_ratio=increase,crop=270:480,boxblur=6:2,scale=1080:1920[bg];' +
       '[b]scale=1080:-2:flags=lanczos[fg];' +
       '[bg][fg]overlay=(W-w)/2:(H-h)/2,setsar=1';
   }
@@ -396,7 +384,7 @@ $('go').onclick = async () => {
   $('go').disabled = true;
   $('engErr').textContent = '';
   $('prog').classList.remove('hide');
-  $('result').classList.add('hide'); $('post').classList.add('hide');
+  $('result').classList.add('hide');
   $('prog').scrollIntoView({ behavior: 'smooth', block: 'start' });
   setPct(0, 'نبدأ…'); $('eta').textContent = '';
   const needDl = !ready;
@@ -419,16 +407,20 @@ $('go').onclick = async () => {
     const m = logs.match(/(\d+(?:\.\d+)?) fps/);
     const srcFps = m ? parseFloat(m[1]) : 30;
     const target = $('fps60').checked ? Math.min(srcFps, 60) : Math.min(srcFps, 30);
+    if (/bt2020|arib-std-b67|smpte2084/.test(logs)) $('anaNote').textContent = 'تنبيه: الفيديو HDR وقد تبدو ألوانه أهدأ بعد التحويل لصيغة تيك توك القياسية.';
     const base = $('mode').value;
-    const preset = base === '17' ? 'slow' : base === '19' ? 'medium' : 'veryfast';
+    const preset = base === '17' ? 'slow' : base === '19' ? 'medium' : base === '21' ? 'veryfast' : 'ultrafast';
     const crf = String(Math.min(23, Math.max(15, +base + (analysis ? analysis.adj : 0))));
     let flt = buildFilter();
     if (analysis && analysis.denoise) flt += ',hqdn3d=1.2:1.2:5:5';
     const args = ['-i', inName, flt.includes('[0:v]') ? '-filter_complex' : '-vf', flt];
-    if (srcFps > target + 0.5) args.push('-r', String(target));
-    args.push('-c:v', 'libx264', '-preset', preset, '-crf', crf, '-maxrate', '18M', '-bufsize', '36M',
-      '-profile:v', 'high', '-pix_fmt', 'yuv420p', '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709',
-      '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart', '-map_metadata', '-1', 'out.mp4');
+    // Always CFR, H.264 High@4.2, 8-bit 4:2:0, AAC-LC stereo 48k, MP4 with moov first
+    args.push('-r', String(target), '-vsync', 'cfr', '-g', String(Math.round(target * 2)),
+      '-c:v', 'libx264', '-preset', preset, '-crf', crf, '-maxrate', '20M', '-bufsize', '40M',
+      '-profile:v', 'high', '-level:v', '4.2', '-pix_fmt', 'yuv420p', '-bf', preset === 'ultrafast' ? '0' : '2',
+      '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
+      '-c:a', 'aac', '-profile:a', 'aac_low', '-b:a', '192k', '-ar', '48000', '-ac', '2',
+      '-movflags', '+faststart', '-map_metadata', '-1', '-f', 'mp4', 'out.mp4');
     const t0 = Date.now();
     const onProg = ({ progress }) => {
       const p = Math.max(0, Math.min(1, progress));
@@ -437,8 +429,10 @@ $('go').onclick = async () => {
       if (p > 0.03) $('eta').textContent = 'المتبقي: ' + fmtETA(el * (1 - p) / p);
     };
     ffmpeg.on('progress', onProg);
-    let code;
-    try { code = await ffmpeg.call('exec', { args }); } finally { ffmpeg.off('progress', onProg); }
+    let code = -1;
+    try {
+      code = await ffmpeg.call('exec', { args });
+    } finally { ffmpeg.off('progress', onProg); }
     if (code !== 0) throw new Error('فشلت المعالجة. جرّب جودة أسرع أو فيديو أقصر.');
     const data = await ffmpeg.call('read', { path: 'out.mp4' });
     const blob = new Blob([data.buffer], { type: 'video/mp4' });
@@ -449,7 +443,7 @@ $('go').onclick = async () => {
     $('saved').textContent = blob.size < file.size ? 'وفّرت ' + Math.round((1 - blob.size / file.size) * 100) + '%' : 'جاهز';
     $('outInfo').innerHTML = `<div>الحجم الجديد: <b>${fmtMB(blob.size)}</b></div><div>الصيغة: <b>H.264 / AAC</b></div>`;
     setPct(100, 'تمت المعالجة'); $('eta').textContent = '';
-    $('result').classList.remove('hide'); $('post').classList.remove('hide');
+    $('result').classList.remove('hide');
     $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
     ffmpeg.call('del', { path: inName }).catch(() => {}); ffmpeg.call('del', { path: 'out.mp4' }).catch(() => {});
   } catch (e) {
@@ -462,36 +456,9 @@ $('go').onclick = async () => {
 $('dl').onclick = () => { const a = document.createElement('a'); a.href = outURL; a.download = outName; a.click(); };
 $('again').onclick = () => {
   $('file').value = ''; file = null;
-  ['meta', 'prog', 'result', 'post'].forEach(i => $(i).classList.add('hide'));
+  ['meta', 'prog', 'result'].forEach(i => $(i).classList.add('hide'));
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
-
-// ---- Publish flow ----
-const TT_URL = 'https://www.tiktok.com/tiktokstudio/upload';
-let timer = null, tab = null;
-const C = 226;
-function stopCount() { clearInterval(timer); timer = null; $('ringwrap').classList.remove('on'); $('postGo').classList.remove('hide'); $('postGo').disabled = false; }
-async function publishNow() {
-  stopCount();
-  const cap = $('cap').value.trim();
-  try { if (cap) await navigator.clipboard.writeText(cap); } catch (e) {}
-  const f = new File([await (await fetch(outURL)).blob()], outName, { type: 'video/mp4' });
-  if (navigator.canShare && navigator.canShare({ files: [f] })) {
-    try { await navigator.share({ files: [f], text: cap }); return; } catch (e) {}
-  }
-  $('dl').click();
-  if (tab && !tab.closed) tab.location.href = TT_URL; else window.open(TT_URL, '_blank');
-  $('postNote').textContent = 'تم حفظ الفيديو ونسخ العنوان. في صفحة تيك توك اختر الملف والصق العنوان ثم اضغط نشر.';
-}
-$('postGo').onclick = () => {
-  let n = +$('delay').value; const total = n;
-  tab = window.open('', '_blank');
-  $('postGo').classList.add('hide'); $('ringwrap').classList.add('on');
-  const draw = () => { $('count').textContent = n; $('fg').style.strokeDashoffset = C * (1 - n / total); };
-  draw();
-  timer = setInterval(() => { n--; draw(); if (n <= 0) publishNow(); }, 1000);
-};
-$('cancel').onclick = () => { stopCount(); if (tab && !tab.closed) tab.close(); };
 
 // ---- Splash ----
 const splash = $('splash'), t0s = Date.now();
