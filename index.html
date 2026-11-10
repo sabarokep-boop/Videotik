@@ -15,8 +15,7 @@ main{width:100%;max-width:560px;margin:0 auto;padding:clamp(16px,4vw,32px)}
 header{margin-bottom:20px}
 h1{font-size:clamp(1.4rem,5vw,2.1rem);line-height:1.25;margin:0 0 6px}
 p.sub{color:var(--mute);margin:0}
-.grid>div{display:flex;flex-direction:column;gap:16px}
-.grid{display:flex;flex-direction:column;gap:16px}
+.grid{display:flex;flex-direction:column;gap:16px;max-width:600px;margin:0 auto;width:100%}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:clamp(14px,3vw,20px)}
 .card h2{font-size:1rem;margin:0 0 10px}
 #drop{position:relative;border-radius:14px;padding:clamp(28px,8vw,52px) 14px;text-align:center;cursor:pointer;background:var(--card);isolation:isolate}
@@ -58,11 +57,7 @@ button.hot{background:var(--hot);color:#fff}
 .ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:1.6rem}
 .note{font-size:.82rem;color:var(--mute);margin:10px 0 0}
 .hide{display:none!important}
-@media (min-width:820px){
- main{max-width:1040px}
- .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
- .phone{width:240px}
-}
+.phone{width:min(100%,240px)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 /* ---- v4: brand, splash, hero, info sections ---- */
@@ -105,6 +100,7 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
 @keyframes pop{to{transform:scale(1.08) rotate(-3deg)}}
 @keyframes slide{0%{margin-inline-start:-40%}100%{margin-inline-start:100%}}
 @media (min-width:820px){main{max-width:1040px}}
+.pct{font-size:clamp(2.6rem,13vw,4rem);font-weight:700;text-align:center;line-height:1.1;margin-bottom:8px;background:linear-gradient(90deg,var(--acc),var(--hot));-webkit-background-clip:text;background-clip:text;color:transparent}
 </style>
 </head>
 <body>
@@ -122,7 +118,6 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
 <div class="chips"><span>مجاني</span><span>بدون تسجيل</span><span>خصوصية كاملة</span></div>
 </header>
 <div class="grid">
-<div>
 <div class="card">
   <div id="drop" tabindex="0" role="button" aria-label="اختر فيديو">
     <b>اسحب الفيديو هنا أو اضغط للاختيار</b>
@@ -131,6 +126,7 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
   <input id="file" type="file" accept="video/*" class="hide">
 </div>
 <div id="meta" class="card hide">
+  <div class="phone"><video id="pv" controls playsinline muted></video></div>
   <div class="info" id="infoGrid"></div>
   <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
   <label class="row">الجودة
@@ -142,17 +138,17 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
   </label>
   <label class="row"><input type="checkbox" id="blurbg" checked> الفيديو الأفقي على خلفية مموّهة بدل القص</label>
   <label class="row"><input type="checkbox" id="fps60"> أبقِ 60 إطار إذا كان الأصل 60</label>
-  <label class="row"><input type="checkbox" id="smart" checked> تحليل ذكي للفيديو (يضبط الجودة حسب المحتوى)</label>
+  <label class="row"><input type="checkbox" id="smart" checked> تحليل ذكي (يضبط الجودة حسب المحتوى)</label>
   <p class="note" id="anaNote" style="margin:0 0 10px"></p>
-  <p class="note" id="engErr" style="color:var(--err);margin:0 0 10px"></p>
-  <button id="go" disabled>جارٍ تحميل المحرك…</button>
+  <button id="go">موافق، ابدأ التحسين</button>
 </div>
 <div id="prog" class="card hide">
+  <div class="pct" id="pct">0%</div>
   <div class="bar"><i id="fill"></i></div>
-  <div id="msg"></div>
+  <div id="msg" style="text-align:center"></div>
+  <div class="note" id="eta" style="text-align:center"></div>
+  <p class="note" id="engErr" style="color:var(--err)"></p>
 </div>
-</div>
-<div>
 <div id="result" class="card hide">
   <span class="badge" id="saved"></span>
   <div class="info" id="outInfo"></div>
@@ -172,7 +168,6 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
   <button id="postGo" class="hot">ابدأ العد التنازلي للنشر</button>
   <p class="note" id="postNote">عند انتهاء العد يُحفظ الفيديو وينسخ العنوان، ثم تُفتح صفحة الرفع في تيك توك. يجب أن تكون مسجل دخولك في المتصفح.</p>
   <button id="again" class="ghost" style="margin-top:12px">فيديو جديد</button>
-</div>
 </div>
 </div>
 <section class="info-sec" id="how">
@@ -206,91 +201,114 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
 <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-const BASE = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
-const WORKER = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js';
-let ffmpeg = null, failed = false;
-let ready = false, file = null, info = null, outURL = null, outName = '';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const withTimeout = (p, ms, msg) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms))]);
+const fmtMB = b => (b / 1048576).toFixed(1) + ' ميجا';
+const fmtT = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+const fmtETA = s => s >= 60 ? Math.ceil(s / 60) + ' دقيقة تقريباً' : Math.max(1, Math.ceil(s)) + ' ثانية تقريباً';
 
-function say(t, c = '') { const m = $('msg'); m.textContent = t; m.className = c; }
+let ffmpeg = null, ready = false, file = null, info = null, outURL = null, outName = '', logs = '', pvURL = null, busy = false;
+const blobCache = {};
 
-async function loadEngine() {
-  failed = false; ready = false;
-  $('go').disabled = true; $('go').textContent = 'جارٍ تحميل المحرك…'; $('engErr').textContent = '';
-  if (typeof FFmpegWASM === 'undefined' || typeof FFmpegUtil === 'undefined') {
-    failed = true; $('go').disabled = !file; $('go').textContent = 'إعادة المحاولة';
-    $('engErr').textContent = 'لم يُحمّل ملف المحرك من الإنترنت. أوقف الـ VPN أو مانع الإعلانات وجرّب مجدداً.';
-    return;
-  }
-  const { toBlobURL } = FFmpegUtil;
-  const sources = [
+function setPct(p, label) {
+  p = Math.max(0, Math.min(100, p));
+  $('pct').textContent = Math.round(p) + '%';
+  $('fill').style.width = p + '%';
+  if (label) $('msg').textContent = label;
+}
+
+// Download with live progress and a stall guard
+async function dl(url, estSize, onFrac, mime) {
+  const ctrl = new AbortController();
+  let stall = setTimeout(() => ctrl.abort(), 25000);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const total = +res.headers.get('content-length') || estSize;
+    const rd = res.body.getReader(), parts = []; let got = 0;
+    for (;;) {
+      const { done, value } = await rd.read();
+      if (done) break;
+      parts.push(value); got += value.length;
+      clearTimeout(stall); stall = setTimeout(() => ctrl.abort(), 25000);
+      onFrac(Math.min(1, got / total));
+    }
+    onFrac(1);
+    return new Blob(parts, { type: mime });
+  } catch (e) {
+    throw new Error(e.name === 'AbortError' ? 'توقف التحميل (الاتصال بطيء أو محجوب)' : e.message);
+  } finally { clearTimeout(stall); }
+}
+
+function newFF() {
+  const f = new FFmpegWASM.FFmpeg();
+  f.on('log', ({ message }) => { logs += message + '\n'; });
+  return f;
+}
+
+// Engine is loaded only when the user presses OK. onP gets 0..1
+async function ensureEngine(onP) {
+  if (ready) return;
+  if (typeof FFmpegWASM === 'undefined' || typeof FFmpegUtil === 'undefined')
+    throw new Error('لم تُحمَّل مكتبة المعالجة من الإنترنت. أوقف الـ VPN أو مانع الإعلانات وأعد تحميل الصفحة.');
+  const srcs = [
     ['https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd', 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js'],
     ['https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd', 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js']
   ];
   let lastErr = '';
-  for (const [base, worker] of sources) {
-    for (const useWorker of [true, false]) {
-      try {
+  for (const [base, worker] of srcs) {
+    try {
+      if (!blobCache[base]) {
+        let a = 0, b = 0, c = 0;
+        const upd = () => onP(a * 0.05 + b * 0.9 + c * 0.05);
+        const js = await dl(base + '/ffmpeg-core.js', 1.5e5, x => { a = x; upd(); }, 'text/javascript');
+        const wasm = await dl(base + '/ffmpeg-core.wasm', 32e6, x => { b = x; upd(); }, 'application/wasm');
+        const wk = await dl(worker, 6e4, x => { c = x; upd(); }, 'text/javascript');
+        blobCache[base] = { core: URL.createObjectURL(js), wasm: URL.createObjectURL(wasm), worker: URL.createObjectURL(wk) };
+      }
+      const k = blobCache[base];
+      for (const useWorker of [true, false]) {
         const f = newFF();
-        const cfg = {
-          coreURL: await toBlobURL(base + '/ffmpeg-core.js', 'text/javascript'),
-          wasmURL: await toBlobURL(base + '/ffmpeg-core.wasm', 'application/wasm')
-        };
-        if (useWorker) cfg.classWorkerURL = await toBlobURL(worker, 'text/javascript');
-        await f.load(cfg);
-        ffmpeg = f; ready = true;
-        $('go').textContent = 'حسّن الفيديو'; $('go').disabled = !file;
-        return;
-      } catch (e) { lastErr = (e && e.message) || String(e); console.error(base, useWorker, e); }
-    }
+        try {
+          const cfg = { coreURL: k.core, wasmURL: k.wasm };
+          if (useWorker) cfg.classWorkerURL = k.worker;
+          await withTimeout(f.load(cfg), 40000, 'انتهت مهلة تشغيل المحرك');
+          ffmpeg = f; ready = true; return;
+        } catch (e) { lastErr = e.message || String(e); try { f.terminate(); } catch (_) {} }
+      }
+    } catch (e) { lastErr = e.message || String(e); }
   }
-  failed = true; $('go').disabled = !file; $('go').textContent = 'إعادة المحاولة';
-  $('engErr').textContent = 'سبب الخطأ: ' + lastErr;
+  throw new Error(lastErr || 'تعذر تشغيل المحرك');
 }
-loadEngine();
-
-function newFF() {
-  const f = new FFmpegWASM.FFmpeg();
-  f.on('progress', ({ progress }) => {
-    const p = Math.max(0, Math.min(1, progress));
-    $('fill').style.width = (p * 100).toFixed(0) + '%';
-    say('جارٍ المعالجة… ' + (p * 100).toFixed(0) + '%');
-  });
-  return f;
-}
-
-const fmtMB = b => (b / 1048576).toFixed(1) + ' ميجا';
-const fmtT = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
 
 function probe(f) {
   return new Promise((res, rej) => {
     const v = document.createElement('video');
     v.preload = 'metadata';
-    v.onloadedmetadata = () => { res({ w: v.videoWidth, h: v.videoHeight, d: v.duration }); URL.revokeObjectURL(v.src); };
+    v.onloadedmetadata = () => { res({ w: v.videoWidth, h: v.videoHeight, d: v.duration }); };
     v.onerror = () => rej(new Error('تعذر قراءة الفيديو'));
-    v.src = URL.createObjectURL(f);
+    v.src = pvURL;
   });
 }
 
-
-// ---- Smart analysis: samples frames, measures motion and fine detail ----
-let analysis = null;
+// Light analysis (8 frames), run only when OK is pressed
 async function analyze(f, d) {
   const v = document.createElement('video');
-  v.muted = true; v.preload = 'auto'; v.src = URL.createObjectURL(f);
-  await new Promise((ok, no) => { v.onloadeddata = ok; v.onerror = no; });
+  v.muted = true; v.preload = 'auto'; v.src = pvURL;
+  await withTimeout(new Promise((ok, no) => { v.onloadeddata = ok; v.onerror = no; }), 6000, 'x');
   const W = 96, H = Math.max(2, Math.round(96 * v.videoHeight / v.videoWidth));
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const cx = cv.getContext('2d', { willReadFrequently: true });
-  const N = 14, grays = [];
+  const N = 8, grays = [];
   for (let i = 0; i < N; i++) {
+    const seeked = new Promise(r => { v.onseeked = r; });
     v.currentTime = Math.min(d - 0.05, (d * (i + 0.5)) / N);
-    await new Promise(r => v.onseeked = r);
+    await Promise.race([seeked, sleep(2500)]);
     cx.drawImage(v, 0, 0, W, H);
     const px = cx.getImageData(0, 0, W, H).data, g = new Float32Array(W * H);
     for (let j = 0; j < g.length; j++) g[j] = 0.299 * px[j * 4] + 0.587 * px[j * 4 + 1] + 0.114 * px[j * 4 + 2];
     grays.push(g);
   }
-  URL.revokeObjectURL(v.src);
   let mo = 0, de = 0;
   for (let i = 1; i < N; i++) { let s2 = 0; for (let j = 0; j < grays[i].length; j++) s2 += Math.abs(grays[i][j] - grays[i - 1][j]); mo += s2 / grays[i].length; }
   mo /= N - 1;
@@ -301,14 +319,17 @@ async function analyze(f, d) {
   else if (mo > 28) { adj = -1; txt = 'حركة عالية: نرفع الجودة قليلاً للحفاظ على التفاصيل'; }
   else txt = 'حركة متوسطة: إعدادات متوازنة';
   const denoise = de > 18 && mo < 14;
-  if (denoise) txt += ' · تفاصيل دقيقة كثيرة (حبيبات محتملة)، سنخفف التشويش الخفي';
+  if (denoise) txt += ' · سنخفف التشويش الخفي';
   return { adj, denoise, txt };
 }
 
 async function pick(f) {
-  if (!f || !f.type.startsWith('video/')) return;
+  if (!f || !f.type.startsWith('video/') || busy) return;
   file = f;
+  if (pvURL) URL.revokeObjectURL(pvURL);
+  pvURL = URL.createObjectURL(f);
   try { info = await probe(f); } catch (e) { return alert(e.message); }
+  $('pv').src = pvURL;
   const kbps = Math.round(f.size * 8 / info.d / 1000);
   $('infoGrid').innerHTML =
     `<div>الاسم: <b>${f.name.replace(/[<>&]/g, '')}</b></div>` +
@@ -316,12 +337,11 @@ async function pick(f) {
     `<div>الدقة: <b>${info.w}×${info.h}</b></div>` +
     `<div>المدة: <b>${fmtT(info.d)}</b></div>` +
     `<div>معدل البت: <b>${kbps} kbps</b></div>`;
+  $('anaNote').textContent = '';
   $('meta').classList.remove('hide');
-  $('result').classList.add('hide');
-  $('prog').classList.add('hide');
-  $('go').disabled = !(ready || failed);
-  analysis = null; $('anaNote').textContent = 'جارٍ تحليل الفيديو…';
-  try { analysis = await analyze(f, info.d); $('anaNote').textContent = analysis.txt; } catch (e) { $('anaNote').textContent = ''; }
+  ['result', 'post', 'prog'].forEach(i => $(i).classList.add('hide'));
+  $('go').disabled = false;
+  $('meta').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 $('drop').onclick = () => $('file').click();
@@ -333,81 +353,90 @@ $('drop').addEventListener('drop', e => pick(e.dataTransfer.files[0]));
 
 function buildFilter() {
   const landscape = info.w > info.h;
-  const even = 'scale=trunc(iw/2)*2:trunc(ih/2)*2';
   if (landscape && $('blurbg').checked) {
-    // Landscape: sharp video centred over a blurred, filled 1080x1920 background
     return '[0:v]split[a][b];' +
       '[a]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24:6[bg];' +
       '[b]scale=1080:-2:flags=lanczos[fg];' +
       '[bg][fg]overlay=(W-w)/2:(H-h)/2,setsar=1';
   }
-  // Never upscale. Only shrink when larger than 1080 wide (portrait) or 1920 wide (landscape).
   const maxW = landscape ? 1920 : 1080;
-  const scale = info.w > maxW ? `scale=${maxW}:-2:flags=lanczos` : even;
+  const scale = info.w > maxW ? `scale=${maxW}:-2:flags=lanczos` : 'scale=trunc(iw/2)*2:trunc(ih/2)*2';
   return scale + ',setsar=1';
 }
 
 $('go').onclick = async () => {
-  if (failed) { loadEngine(); return; }
-  if (!ready || !file) return;
+  if (!file || busy) return;
+  busy = true;
   $('go').disabled = true;
+  $('engErr').textContent = '';
   $('prog').classList.remove('hide');
-  $('result').classList.add('hide');
-  $('fill').style.width = '0%';
-  say('جارٍ قراءة الملف…');
-  const ext = (file.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4';
-  const inName = 'in.' + ext;
+  $('result').classList.add('hide'); $('post').classList.add('hide');
+  $('prog').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  setPct(0, 'نبدأ…'); $('eta').textContent = '';
+  const needDl = !ready;
+  const encFrom = needDl ? 40 : 6;
   try {
+    // 1) engine (once)
+    if (needDl) await ensureEngine(fr => setPct(fr * 34, 'تحميل المحرك (مرة واحدة فقط)… ' + Math.round(fr * 100) + '%'));
+    // 2) light analysis
+    setPct(needDl ? 36 : 2, 'تحليل الفيديو…');
+    let analysis = null;
+    if ($('smart').checked) { try { analysis = await withTimeout(analyze(file, info.d), 9000, 'x'); $('anaNote').textContent = analysis.txt; } catch (e) {} }
+    // 3) encode
+    const ext = (file.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4';
+    const inName = 'in.' + ext;
+    setPct(needDl ? 38 : 4, 'قراءة الملف…');
     await ffmpeg.writeFile(inName, await FFmpegUtil.fetchFile(file));
+    logs = '';
+    try { await ffmpeg.exec(['-i', inName]); } catch (e) {}
+    const m = logs.match(/(\d+(?:\.\d+)?) fps/);
+    const srcFps = m ? parseFloat(m[1]) : 30;
+    const target = $('fps60').checked ? Math.min(srcFps, 60) : Math.min(srcFps, 30);
     const base = $('mode').value;
     const preset = base === '17' ? 'slow' : base === '19' ? 'medium' : 'veryfast';
-    const use = $('smart').checked && analysis;
-    const crf = String(Math.min(23, Math.max(15, +base + (use ? analysis.adj : 0))));
+    const crf = String(Math.min(23, Math.max(15, +base + (analysis ? analysis.adj : 0))));
     let flt = buildFilter();
-    if (use && analysis.denoise) flt += ',hqdn3d=1.2:1.2:5:5';
-    const complex = flt.includes('[0:v]');
-    const args = ['-i', inName];
-    args.push(complex ? '-filter_complex' : '-vf', flt);
-    if (!$('fps60').checked) args.push('-fpsmax', '30');
-    else args.push('-fpsmax', '60');
-    args.push(
-      '-c:v', 'libx264', '-preset', preset, '-crf', crf,
-      '-maxrate', '18M', '-bufsize', '36M',
-      '-profile:v', 'high', '-pix_fmt', 'yuv420p',
-      '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709',
-      '-c:a', 'aac', '-b:a', '192k', '-ar', '48000',
-      '-movflags', '+faststart', '-map_metadata', '-1',
-      'out.mp4'
-    );
-    say('جارٍ المعالجة…');
+    if (analysis && analysis.denoise) flt += ',hqdn3d=1.2:1.2:5:5';
+    const args = ['-i', inName, flt.includes('[0:v]') ? '-filter_complex' : '-vf', flt];
+    if (srcFps > target + 0.5) args.push('-r', String(target));
+    args.push('-c:v', 'libx264', '-preset', preset, '-crf', crf, '-maxrate', '18M', '-bufsize', '36M',
+      '-profile:v', 'high', '-pix_fmt', 'yuv420p', '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709',
+      '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart', '-map_metadata', '-1', 'out.mp4');
+    const t0 = Date.now();
+    const onProg = ({ progress }) => {
+      const p = Math.max(0, Math.min(1, progress));
+      setPct(encFrom + p * (100 - encFrom), 'جارٍ تحسين الفيديو…');
+      const el = (Date.now() - t0) / 1000;
+      if (p > 0.03) $('eta').textContent = 'المتبقي: ' + fmtETA(el * (1 - p) / p);
+    };
+    ffmpeg.on('progress', onProg);
     const code = await ffmpeg.exec(args);
-    if (code !== 0) throw new Error('فشلت المعالجة. جرّب جودة أقل أو فيديو أصغر.');
+    ffmpeg.off('progress', onProg);
+    if (code !== 0) throw new Error('فشلت المعالجة. جرّب جودة أسرع أو فيديو أقصر.');
     const data = await ffmpeg.readFile('out.mp4');
     const blob = new Blob([data.buffer], { type: 'video/mp4' });
     if (outURL) URL.revokeObjectURL(outURL);
     outURL = URL.createObjectURL(blob);
     outName = file.name.replace(/\.[^.]+$/, '') + '_tiktok.mp4';
     $('player').src = outURL;
+    $('saved').textContent = blob.size < file.size ? 'وفّرت ' + Math.round((1 - blob.size / file.size) * 100) + '%' : 'جاهز';
     $('outInfo').innerHTML = `<div>الحجم الجديد: <b>${fmtMB(blob.size)}</b></div><div>الصيغة: <b>H.264 / AAC</b></div>`;
-    $('result').classList.remove('hide');$('post').classList.remove('hide');
-    $('saved').textContent = 'وفّرت ' + Math.max(0, Math.round((1 - blob.size / file.size) * 100)) + '%';
-    $('fill').style.width = '100%';
-    say('تمت المعالجة', 'ok');
-    ffmpeg.deleteFile(inName).catch(() => {});
-    ffmpeg.deleteFile('out.mp4').catch(() => {});
+    setPct(100, 'تمت المعالجة'); $('eta').textContent = '';
+    $('result').classList.remove('hide'); $('post').classList.remove('hide');
+    $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    ffmpeg.deleteFile(inName).catch(() => {}); ffmpeg.deleteFile('out.mp4').catch(() => {});
   } catch (e) {
-    say(e.message || 'حدث خطأ', 'err');
+    $('engErr').textContent = 'تعذر الإكمال: ' + (e.message || e);
+    $('msg').textContent = 'توقفت العملية';
   }
-  $('go').disabled = false;
+  busy = false; $('go').disabled = false;
 };
 
-$('dl').onclick = () => {
-  const a = document.createElement('a');
-  a.href = outURL; a.download = outName; a.click();
-};
+$('dl').onclick = () => { const a = document.createElement('a'); a.href = outURL; a.download = outName; a.click(); };
 $('again').onclick = () => {
   $('file').value = ''; file = null;
   ['meta', 'prog', 'result', 'post'].forEach(i => $(i).classList.add('hide'));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 // ---- Publish flow ----
@@ -415,13 +444,11 @@ const TT_URL = 'https://www.tiktok.com/tiktokstudio/upload';
 let timer = null, tab = null;
 const C = 226;
 function stopCount() { clearInterval(timer); timer = null; $('ringwrap').classList.remove('on'); $('postGo').classList.remove('hide'); $('postGo').disabled = false; }
-
 async function publishNow() {
   stopCount();
   const cap = $('cap').value.trim();
   try { if (cap) await navigator.clipboard.writeText(cap); } catch (e) {}
   const f = new File([await (await fetch(outURL)).blob()], outName, { type: 'video/mp4' });
-  // Phones: share sheet straight to the TikTok app
   if (navigator.canShare && navigator.canShare({ files: [f] })) {
     try { await navigator.share({ files: [f], text: cap }); return; } catch (e) {}
   }
@@ -429,13 +456,10 @@ async function publishNow() {
   if (tab && !tab.closed) tab.location.href = TT_URL; else window.open(TT_URL, '_blank');
   $('postNote').textContent = 'تم حفظ الفيديو ونسخ العنوان. في صفحة تيك توك اختر الملف والصق العنوان ثم اضغط نشر.';
 }
-
 $('postGo').onclick = () => {
-  let n = +$('delay').value;
-  const total = n;
-  tab = window.open('', '_blank'); // opened on tap so the browser allows the redirect later
-  $('postGo').classList.add('hide');
-  $('ringwrap').classList.add('on');
+  let n = +$('delay').value; const total = n;
+  tab = window.open('', '_blank');
+  $('postGo').classList.add('hide'); $('ringwrap').classList.add('on');
   const draw = () => { $('count').textContent = n; $('fg').style.strokeDashoffset = C * (1 - n / total); };
   draw();
   timer = setInterval(() => { n--; draw(); if (n <= 0) publishNow(); }, 1000);
@@ -443,11 +467,10 @@ $('postGo').onclick = () => {
 $('cancel').onclick = () => { stopCount(); if (tab && !tab.closed) tab.close(); };
 
 // ---- Splash ----
-const splash = $('splash');
-const t0 = Date.now();
-function hideSplash() { const w = Math.max(0, 1300 - (Date.now() - t0)); setTimeout(() => { splash.classList.add('out'); setTimeout(() => splash.remove(), 600); }, w); }
+const splash = $('splash'), t0s = Date.now();
+function hideSplash() { const w = Math.max(0, 1000 - (Date.now() - t0s)); setTimeout(() => { splash.classList.add('out'); setTimeout(() => splash.remove(), 600); }, w); }
 window.addEventListener('load', () => setTimeout(hideSplash, 50));
-setTimeout(hideSplash, 4500);
+setTimeout(hideSplash, 3000);
 </script>
 </body>
 </html>
