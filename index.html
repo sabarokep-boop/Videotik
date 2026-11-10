@@ -144,6 +144,7 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
   <label class="row"><input type="checkbox" id="fps60"> أبقِ 60 إطار إذا كان الأصل 60</label>
   <label class="row"><input type="checkbox" id="smart" checked> تحليل ذكي للفيديو (يضبط الجودة حسب المحتوى)</label>
   <p class="note" id="anaNote" style="margin:0 0 10px"></p>
+  <p class="note" id="engErr" style="color:var(--err);margin:0 0 10px"></p>
   <button id="go" disabled>جارٍ تحميل المحرك…</button>
 </div>
 <div id="prog" class="card hide">
@@ -207,34 +208,55 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
 const $ = id => document.getElementById(id);
 const BASE = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
 const WORKER = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js';
-const ffmpeg = new FFmpegWASM.FFmpeg();
+let ffmpeg = null, failed = false;
 let ready = false, file = null, info = null, outURL = null, outName = '';
 
 function say(t, c = '') { const m = $('msg'); m.textContent = t; m.className = c; }
 
 async function loadEngine() {
-  try {
-    const { toBlobURL } = FFmpegUtil;
-    await ffmpeg.load({
-      coreURL: await toBlobURL(BASE + '/ffmpeg-core.js', 'text/javascript'),
-      wasmURL: await toBlobURL(BASE + '/ffmpeg-core.wasm', 'application/wasm'),
-      classWorkerURL: await toBlobURL(WORKER, 'text/javascript')
-    });
-    ready = true;
-    $('go').textContent = 'حسّن الفيديو';
-    $('go').disabled = !file;
-  } catch (e) {
-    $('go').textContent = 'تعذر تحميل المحرك';
-    console.error(e);
+  failed = false; ready = false;
+  $('go').disabled = true; $('go').textContent = 'جارٍ تحميل المحرك…'; $('engErr').textContent = '';
+  if (typeof FFmpegWASM === 'undefined' || typeof FFmpegUtil === 'undefined') {
+    failed = true; $('go').disabled = !file; $('go').textContent = 'إعادة المحاولة';
+    $('engErr').textContent = 'لم يُحمّل ملف المحرك من الإنترنت. أوقف الـ VPN أو مانع الإعلانات وجرّب مجدداً.';
+    return;
   }
+  const { toBlobURL } = FFmpegUtil;
+  const sources = [
+    ['https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd', 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js'],
+    ['https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd', 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js']
+  ];
+  let lastErr = '';
+  for (const [base, worker] of sources) {
+    for (const useWorker of [true, false]) {
+      try {
+        const f = newFF();
+        const cfg = {
+          coreURL: await toBlobURL(base + '/ffmpeg-core.js', 'text/javascript'),
+          wasmURL: await toBlobURL(base + '/ffmpeg-core.wasm', 'application/wasm')
+        };
+        if (useWorker) cfg.classWorkerURL = await toBlobURL(worker, 'text/javascript');
+        await f.load(cfg);
+        ffmpeg = f; ready = true;
+        $('go').textContent = 'حسّن الفيديو'; $('go').disabled = !file;
+        return;
+      } catch (e) { lastErr = (e && e.message) || String(e); console.error(base, useWorker, e); }
+    }
+  }
+  failed = true; $('go').disabled = !file; $('go').textContent = 'إعادة المحاولة';
+  $('engErr').textContent = 'سبب الخطأ: ' + lastErr;
 }
 loadEngine();
 
-ffmpeg.on('progress', ({ progress }) => {
-  const p = Math.max(0, Math.min(1, progress));
-  $('fill').style.width = (p * 100).toFixed(0) + '%';
-  say('جارٍ المعالجة… ' + (p * 100).toFixed(0) + '%');
-});
+function newFF() {
+  const f = new FFmpegWASM.FFmpeg();
+  f.on('progress', ({ progress }) => {
+    const p = Math.max(0, Math.min(1, progress));
+    $('fill').style.width = (p * 100).toFixed(0) + '%';
+    say('جارٍ المعالجة… ' + (p * 100).toFixed(0) + '%');
+  });
+  return f;
+}
 
 const fmtMB = b => (b / 1048576).toFixed(1) + ' ميجا';
 const fmtT = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
@@ -297,7 +319,7 @@ async function pick(f) {
   $('meta').classList.remove('hide');
   $('result').classList.add('hide');
   $('prog').classList.add('hide');
-  $('go').disabled = !ready;
+  $('go').disabled = !(ready || failed);
   analysis = null; $('anaNote').textContent = 'جارٍ تحليل الفيديو…';
   try { analysis = await analyze(f, info.d); $('anaNote').textContent = analysis.txt; } catch (e) { $('anaNote').textContent = ''; }
 }
@@ -326,6 +348,7 @@ function buildFilter() {
 }
 
 $('go').onclick = async () => {
+  if (failed) { loadEngine(); return; }
   if (!ready || !file) return;
   $('go').disabled = true;
   $('prog').classList.remove('hide');
