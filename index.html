@@ -197,8 +197,6 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
 </footer>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -240,43 +238,71 @@ async function dl(url, estSize, onFrac, mime) {
   } finally { clearTimeout(stall); }
 }
 
-function newFF() {
-  const f = new FFmpegWASM.FFmpeg();
-  f.on('log', ({ message }) => { logs += message + '\n'; });
-  return f;
+// Minimal worker that runs ffmpeg-core directly (no @ffmpeg/ffmpeg wrapper)
+const WORKER_SRC = `
+let core = null;
+self.onmessage = async (e) => {
+  const { id, type, data } = e.data;
+  try {
+    let res = null, tr = [];
+    if (type === 'load') {
+      importScripts(data.coreURL);
+      core = await self.createFFmpegCore({
+        mainScriptUrlOrBlob: data.coreURL + '#' + btoa(JSON.stringify({ wasmURL: data.wasmURL, workerURL: data.coreURL }))
+      });
+      core.setLogger(d => self.postMessage({ evt: 'log', data: d }));
+      core.setProgress(d => self.postMessage({ evt: 'progress', data: d }));
+      res = true;
+    } else if (type === 'write') { core.FS.writeFile(data.path, data.bytes); res = true; }
+    else if (type === 'exec') { core.setTimeout(-1); core.exec(...data.args); res = core.ret; core.reset(); }
+    else if (type === 'read') { const b = core.FS.readFile(data.path); res = b; tr = [b.buffer]; }
+    else if (type === 'del') { try { core.FS.unlink(data.path); } catch (_) {} res = true; }
+    self.postMessage({ id, res }, tr);
+  } catch (err) { self.postMessage({ id, err: String((err && err.message) || err) }); }
+};`;
+
+function makeWorker() {
+  const w = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' })));
+  let n = 0; const pend = {}; const L = { log: [], progress: [] };
+  w.onmessage = e => {
+    const m = e.data;
+    if (m.evt) { (L[m.evt] || []).forEach(fn => fn(m.data)); return; }
+    const p = pend[m.id]; if (!p) return; delete pend[m.id];
+    m.err ? p.rej(new Error(m.err)) : p.res(m.res);
+  };
+  w.onerror = e => { Object.values(pend).forEach(p => p.rej(new Error(e.message || 'خطأ في عامل المعالجة'))); };
+  return {
+    terminate: () => w.terminate(),
+    call: (type, data, tr = []) => new Promise((res, rej) => { const id = ++n; pend[id] = { res, rej }; w.postMessage({ id, type, data }, tr); }),
+    on: (evt, fn) => L[evt].push(fn),
+    off: (evt, fn) => { L[evt] = L[evt].filter(x => x !== fn); }
+  };
 }
 
 // Engine is loaded only when the user presses OK. onP gets 0..1
 async function ensureEngine(onP) {
   if (ready) return;
-  if (typeof FFmpegWASM === 'undefined' || typeof FFmpegUtil === 'undefined')
-    throw new Error('لم تُحمَّل مكتبة المعالجة من الإنترنت. أوقف الـ VPN أو مانع الإعلانات وأعد تحميل الصفحة.');
   const srcs = [
-    ['https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd', 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js'],
-    ['https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd', 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js']
+    'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd',
+    'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd'
   ];
   let lastErr = '';
-  for (const [base, worker] of srcs) {
+  for (const base of srcs) {
+    let h = null;
     try {
       if (!blobCache[base]) {
-        let a = 0, b = 0, c = 0;
-        const upd = () => onP(a * 0.05 + b * 0.9 + c * 0.05);
+        let a = 0, b = 0;
+        const upd = () => onP(a * 0.03 + b * 0.97);
         const js = await dl(base + '/ffmpeg-core.js', 1.5e5, x => { a = x; upd(); }, 'text/javascript');
         const wasm = await dl(base + '/ffmpeg-core.wasm', 32e6, x => { b = x; upd(); }, 'application/wasm');
-        const wk = await dl(worker, 6e4, x => { c = x; upd(); }, 'text/javascript');
-        blobCache[base] = { core: URL.createObjectURL(js), wasm: URL.createObjectURL(wasm), worker: URL.createObjectURL(wk) };
+        blobCache[base] = { core: URL.createObjectURL(js), wasm: URL.createObjectURL(wasm) };
       }
       const k = blobCache[base];
-      for (const useWorker of [true, false]) {
-        const f = newFF();
-        try {
-          const cfg = { coreURL: k.core, wasmURL: k.wasm };
-          if (useWorker) cfg.classWorkerURL = k.worker;
-          await withTimeout(f.load(cfg), 40000, 'انتهت مهلة تشغيل المحرك');
-          ffmpeg = f; ready = true; return;
-        } catch (e) { lastErr = e.message || String(e); try { f.terminate(); } catch (_) {} }
-      }
-    } catch (e) { lastErr = e.message || String(e); }
+      h = makeWorker();
+      h.on('log', d => { logs += d.message + '\n'; });
+      await withTimeout(h.call('load', { coreURL: k.core, wasmURL: k.wasm }), 60000, 'انتهت مهلة تشغيل المحرك');
+      ffmpeg = h; ready = true; return;
+    } catch (e) { lastErr = e.message || String(e); if (h) h.terminate(); }
   }
   throw new Error(lastErr || 'تعذر تشغيل المحرك');
 }
@@ -377,7 +403,7 @@ $('go').onclick = async () => {
   const encFrom = needDl ? 40 : 6;
   try {
     // 1) engine (once)
-    if (needDl) await ensureEngine(fr => setPct(fr * 34, 'تحميل المحرك (مرة واحدة فقط)… ' + Math.round(fr * 100) + '%'));
+    if (needDl) await ensureEngine(fr => setPct(fr * 34, fr >= 1 ? 'تشغيل المحرك… لحظات' : 'تحميل المحرك (مرة واحدة فقط)… ' + Math.round(fr * 100) + '%'));
     // 2) light analysis
     setPct(needDl ? 36 : 2, 'تحليل الفيديو…');
     let analysis = null;
@@ -386,9 +412,10 @@ $('go').onclick = async () => {
     const ext = (file.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4';
     const inName = 'in.' + ext;
     setPct(needDl ? 38 : 4, 'قراءة الملف…');
-    await ffmpeg.writeFile(inName, await FFmpegUtil.fetchFile(file));
+    const buf = new Uint8Array(await file.arrayBuffer());
+    await ffmpeg.call('write', { path: inName, bytes: buf }, [buf.buffer]);
     logs = '';
-    try { await ffmpeg.exec(['-i', inName]); } catch (e) {}
+    try { await ffmpeg.call('exec', { args: ['-i', inName] }); } catch (e) {}
     const m = logs.match(/(\d+(?:\.\d+)?) fps/);
     const srcFps = m ? parseFloat(m[1]) : 30;
     const target = $('fps60').checked ? Math.min(srcFps, 60) : Math.min(srcFps, 30);
@@ -410,10 +437,10 @@ $('go').onclick = async () => {
       if (p > 0.03) $('eta').textContent = 'المتبقي: ' + fmtETA(el * (1 - p) / p);
     };
     ffmpeg.on('progress', onProg);
-    const code = await ffmpeg.exec(args);
-    ffmpeg.off('progress', onProg);
+    let code;
+    try { code = await ffmpeg.call('exec', { args }); } finally { ffmpeg.off('progress', onProg); }
     if (code !== 0) throw new Error('فشلت المعالجة. جرّب جودة أسرع أو فيديو أقصر.');
-    const data = await ffmpeg.readFile('out.mp4');
+    const data = await ffmpeg.call('read', { path: 'out.mp4' });
     const blob = new Blob([data.buffer], { type: 'video/mp4' });
     if (outURL) URL.revokeObjectURL(outURL);
     outURL = URL.createObjectURL(blob);
@@ -424,7 +451,7 @@ $('go').onclick = async () => {
     setPct(100, 'تمت المعالجة'); $('eta').textContent = '';
     $('result').classList.remove('hide'); $('post').classList.remove('hide');
     $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    ffmpeg.deleteFile(inName).catch(() => {}); ffmpeg.deleteFile('out.mp4').catch(() => {});
+    ffmpeg.call('del', { path: inName }).catch(() => {}); ffmpeg.call('del', { path: 'out.mp4' }).catch(() => {});
   } catch (e) {
     $('engErr').textContent = 'تعذر الإكمال: ' + (e.message || e);
     $('msg').textContent = 'توقفت العملية';
