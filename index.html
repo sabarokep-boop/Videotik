@@ -101,6 +101,16 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
 @keyframes slide{0%{margin-inline-start:-40%}100%{margin-inline-start:100%}}
 @media (min-width:820px){main{max-width:1040px}}
 .pct{font-size:clamp(2.6rem,13vw,4rem);font-weight:700;text-align:center;line-height:1.1;margin-bottom:8px;background:linear-gradient(90deg,var(--acc),var(--hot));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* ---- platform switch ---- */
+:root[data-p="ig"]{--acc:#c13584;--hot:#f58529;--glow1:rgba(193,53,132,.18);--glow2:rgba(245,133,41,.15)}
+@media (prefers-color-scheme:dark){:root[data-p="ig"]{--acc:#e1599e;--hot:#ff9a3c;--glow1:rgba(225,89,158,.22);--glow2:rgba(255,154,60,.16)}}
+.switch{display:flex;gap:4px;padding:4px;max-width:340px;margin:0 auto clamp(18px,4vw,28px);background:var(--card);border:1px solid var(--line);border-radius:14px}
+.switch button{flex:1;width:auto;min-height:42px;padding:8px 14px;background:transparent;color:var(--mute);border-radius:10px}
+.switch button.on{background:linear-gradient(90deg,var(--acc),var(--hot));color:#fff}
+.specs{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:.88rem;color:var(--mute)}
+.specs b{color:var(--ink);display:block;font-weight:600}
+.specs div{padding:6px 0;border-bottom:1px dashed var(--line)}
 </style>
 </head>
 <body>
@@ -112,12 +122,17 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
 <div class="logo"><svg><use href="#logo"/></svg>نقاء</div>
 <div class="navlinks"><a href="#how">كيف يعمل</a><a href="#why">المميزات</a><a href="#faq">أسئلة شائعة</a></div>
 </nav>
+<div class="switch" role="tablist" aria-label="المنصة">
+<button id="swTT" class="on" role="tab">تيك توك</button>
+<button id="swIG" role="tab">إنستغرام</button>
+</div>
 <header class="hero">
-<h1>حسّن الفيديو <em>قبل ما تنشره</em></h1>
-<p>ارفع الفيديو، ونجهّزه بأفضل إعدادات تيك توك بدون ما تخسر الجودة. كل شيء على جهازك.</p>
+<h1 id="hTitle">حسّن الفيديو <em>قبل ما تنشره</em></h1>
+<p>ارفع الفيديو، ونجهّزه بأفضل إعدادات <span class="pn">تيك توك</span> بدون ما تخسر الجودة. كل شيء على جهازك.</p>
 <div class="chips"><span>مجاني</span><span>بدون تسجيل</span><span>خصوصية كاملة</span></div>
 </header>
 <div class="grid">
+<div class="card" id="specCard"><h2 id="specTitle"></h2><div class="specs" id="specGrid"></div></div>
 <div class="card" id="dropCard">
   <div id="drop" tabindex="0" role="button" aria-label="اختر فيديو">
     <b>اسحب الفيديو هنا أو اضغط للاختيار</b>
@@ -128,6 +143,7 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
 <div id="meta" class="card hide">
   <div class="phone"><video id="pv" controls playsinline muted></video></div>
   <div class="info" id="infoGrid"></div>
+  <p class="note" id="durNote" style="color:var(--err);margin:8px 0 0"></p>
   <div id="settings">
   <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
   <label class="row">الجودة
@@ -139,7 +155,7 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
     </select>
   </label>
   <label class="row"><input type="checkbox" id="blurbg" checked> الفيديو الأفقي على خلفية مموّهة بدل القص</label>
-  <label class="row"><input type="checkbox" id="fps60"> أبقِ 60 إطار إذا كان الأصل 60</label>
+  <label class="row" id="fpsRow"><input type="checkbox" id="fps60"> أبقِ 60 إطار إذا كان الأصل 60</label>
   <label class="row"><input type="checkbox" id="smart" checked> تحليل ذكي (يضبط الجودة حسب المحتوى)</label>
   <p class="note" id="anaNote" style="margin:0 0 10px"></p>
   <button id="go">موافق، ابدأ التحسين</button>
@@ -164,8 +180,8 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
 <h2>كيف يعمل؟</h2>
 <div class="cols">
 <div class="card"><div class="ico">1</div><h3>اختر الفيديو</h3><p>نحلل الدقة والحركة والتفاصيل ونقترح أنسب إعدادات.</p></div>
-<div class="card"><div class="ico">2</div><h3>نحسّنه على جهازك</h3><p>يُعاد ترميزه بصيغة H.264 المناسبة لتيك توك دون تكبير الدقة.</p></div>
-<div class="card"><div class="ico">3</div><h3>احفظه وانشره</h3><p>احفظ الفيديو الجاهز وارفعه على تيك توك بنفسك.</p></div>
+<div class="card"><div class="ico">2</div><h3>نحسّنه على جهازك</h3><p>يُعاد ترميزه بصيغة H.264 المناسبة ل<span class="pn">تيك توك</span> دون تكبير الدقة.</p></div>
+<div class="card"><div class="ico">3</div><h3>احفظه وانشره</h3><p>احفظ الفيديو الجاهز وارفعه على <span class="pn">تيك توك</span> بنفسك.</p></div>
 </div></section>
 <section class="info-sec" id="why">
 <h2>ليش نقاء؟</h2>
@@ -176,9 +192,9 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
 </div></section>
 <section class="info-sec" id="faq">
 <h2>أسئلة شائعة</h2>
-<details><summary>هل الجودة تصير مثالية على تيك توك؟</summary><p>تيك توك يعيد ضغط أي فيديو. نحن نعطيه ملفاً نظيفاً ليقلل الضرر، لكن لا يمكن منعه كلياً.</p></details>
+<details><summary>هل الجودة تصير مثالية على <span class="pn">تيك توك</span>؟</summary><p><span class="pn">تيك توك</span> يعيد ضغط أي فيديو. نحن نعطيه ملفاً نظيفاً ليقلل الضرر، لكن لا يمكن منعه كلياً.</p></details>
 <details><summary>كم تاخذ المعالجة؟</summary><p>تعتمد على جهازك وطول الفيديو. الفيديوهات القصيرة أسرع، والكبيرة جداً قد تفشل.</p></details>
-<details><summary>هل الفيديو يطابق متطلبات تيك توك؟</summary><p>نعم. يخرج دائماً بصيغة H.264 وصوت AAC وألوان قياسية وعدد إطارات ثابت، حتى لو زاد حجم الملف.</p></details>
+<details><summary>هل الفيديو يطابق متطلبات <span class="pn">تيك توك</span>؟</summary><p>نعم. يخرج دائماً بصيغة H.264 وصوت AAC وألوان قياسية وعدد إطارات ثابت، حتى لو زاد حجم الملف.</p></details>
 </section>
 <footer>
 <div class="logo"><svg><use href="#logo"/></svg>نقاء</div>
@@ -360,6 +376,7 @@ async function pick(f) {
     `<div>الاسم: <b>${f.name.replace(/[<>&]/g, '')}</b></div><div>الحجم: <b>${fmtMB(f.size)}</b></div>` +
     (info ? `<div>الدقة: <b>${info.w}×${info.h}</b></div><div>المدة: <b>${fmtT(info.d)}</b></div><div>معدل البت: <b>${Math.round(f.size * 8 / info.d / 1000)} kbps</b></div>` : '');
   $('anaNote').textContent = info ? '' : 'تعذرت معاينة الفيديو في المتصفح، لكن يمكن تحسينه.';
+  $('durNote').textContent = info && info.d > PROF[P].maxDur ? 'المدة (' + fmtT(info.d) + ') أطول من حد ' + PROF[P].name + ' (' + fmtT(PROF[P].maxDur) + ').' : '';
   try {
     // Copy the bytes NOW, while the file permission is still valid (Android can revoke it later)
     const ab = await f.arrayBuffer();
@@ -397,6 +414,7 @@ $('go').onclick = async () => {
   if (file && !fileBlob && !busy) { $('file').click(); return; }
   if (!file || !fileBlob || busy) return;
   busy = true;
+  const PR = PROF[P];
   try { wake = await navigator.wakeLock.request('screen'); } catch (e) { wake = null; }
   $('go').disabled = true;
   $('engErr').textContent = '';
@@ -429,18 +447,18 @@ $('go').onclick = async () => {
     }
     const m = logs.match(/(\d+(?:\.\d+)?) fps/);
     const srcFps = m ? parseFloat(m[1]) : 30;
-    const target = $('fps60').checked ? Math.min(srcFps, 60) : Math.min(srcFps, 30);
+    const target = Math.min(srcFps, PR.fps60 && $('fps60').checked ? 60 : PR.fps);
     if (/bt2020|arib-std-b67|smpte2084/.test(logs)) $('anaNote').textContent = 'تنبيه: الفيديو HDR وقد تبدو ألوانه أهدأ بعد التحويل لصيغة تيك توك القياسية.';
     const base = $('mode').value;
     const preset = base === '17' ? 'slow' : base === '19' ? 'medium' : base === '21' ? 'veryfast' : 'ultrafast';
-    const crf = String(Math.min(23, Math.max(15, +base + (analysis ? analysis.adj : 0))));
+    const crf = String(Math.min(23, Math.max(15, +base + (analysis ? analysis.adj : 0) + PR.crfAdj)));
     let flt = buildFilter();
     if (analysis && analysis.denoise) flt += ',hqdn3d=1.2:1.2:5:5';
     const args = ['-i', inName, flt.includes('[0:v]') ? '-filter_complex' : '-vf', flt];
-    // Always CFR, H.264 High@4.2, 8-bit 4:2:0, AAC-LC stereo 48k, MP4 with moov first
+    // Always CFR, H.264 High@(4.1 IG / 4.2 TikTok), 8-bit 4:2:0, AAC-LC stereo 48k, MP4 with moov first
     args.push('-r', String(target), '-vsync', 'cfr', '-g', String(Math.round(target * 2)),
-      '-c:v', 'libx264', '-preset', preset, '-crf', crf, '-maxrate', '20M', '-bufsize', '40M',
-      '-profile:v', 'high', '-level:v', '4.2', '-pix_fmt', 'yuv420p', '-bf', preset === 'ultrafast' ? '0' : '2',
+      '-c:v', 'libx264', '-preset', preset, '-crf', crf, '-maxrate', PR.maxrate, '-bufsize', PR.bufsize,
+      '-profile:v', 'high', '-level:v', PR.level, '-pix_fmt', 'yuv420p', '-bf', preset === 'ultrafast' ? '0' : '2',
       '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
       '-c:a', 'aac', '-profile:a', 'aac_low', '-b:a', '192k', '-ar', '48000', '-ac', '2',
       '-movflags', '+faststart', '-map_metadata', '-1', '-f', 'mp4', 'out.mp4');
@@ -461,7 +479,7 @@ $('go').onclick = async () => {
     const blob = new Blob([data.buffer], { type: 'video/mp4' });
     if (outURL) URL.revokeObjectURL(outURL);
     outURL = URL.createObjectURL(blob);
-    outName = file.name.replace(/\.[^.]+$/, '') + '_tiktok.mp4';
+    outName = file.name.replace(/\.[^.]+$/, '') + PR.suffix + '.mp4';
     $('player').src = outURL;
     $('saved').textContent = blob.size < file.size ? 'وفّرت ' + Math.round((1 - blob.size / file.size) * 100) + '%' : 'جاهز';
     $('outInfo').innerHTML = `<div>الحجم الجديد: <b>${fmtMB(blob.size)}</b></div><div>الصيغة: <b>H.264 / AAC</b></div>`;
@@ -493,6 +511,36 @@ $('again').onclick = () => {
   window.scrollTo({ top: 0, behavior: 'smooth' });
   $('file').click();
 };
+
+
+// ---- Platform profiles (TikTok / Instagram) ----
+const PROF = {
+  tt: { key: 'tt', name: 'تيك توك', hash: '#tiktok', fps: 30, fps60: true, maxrate: '20M', bufsize: '40M', level: '4.2', crfAdj: 0, suffix: '_tiktok', maxDur: 600,
+    title: 'حسّن الفيديو <em>قبل ما تنشره</em>',
+    specs: [['الترميز', 'H.264 High@4.2'], ['اللون', '8-bit 4:2:0 · bt709'], ['الدقة', '1080×1920 (9:16)'], ['الإطارات', '30 ثابتة (أو 60)'], ['معدل البت', 'حتى 20 Mbps'], ['الصوت', 'AAC-LC 48kHz ستيريو'], ['الحاوية', 'MP4 + faststart'], ['المدة', 'حتى 10 دقائق']] },
+  ig: { key: 'ig', name: 'إنستغرام', hash: '#instagram', fps: 30, fps60: false, maxrate: '12M', bufsize: '24M', level: '4.1', crfAdj: -1, suffix: '_instagram', maxDur: 180,
+    title: 'جهّز ريلز <em>بأعلى جودة</em>',
+    specs: [['الترميز', 'H.264 High@4.1'], ['اللون', '8-bit 4:2:0 · bt709'], ['الدقة', '1080×1920 (9:16)'], ['الإطارات', 'ثابتة، حتى 30'], ['معدل البت', 'حتى 12 Mbps (الموصى 5–12)'], ['الصوت', 'AAC-LC 48kHz ستيريو'], ['الحاوية', 'MP4 + faststart'], ['المدة', 'ريلز حتى 3 دقائق']] }
+};
+let P = 'tt';
+function applyProfile(k) {
+  if (!PROF[k] || busy) return;
+  P = k; const PR = PROF[k];
+  if (document.documentElement) document.documentElement.dataset.p = k;
+  $('swTT').classList.toggle('on', k === 'tt'); $('swIG').classList.toggle('on', k === 'ig');
+  $('hTitle').innerHTML = PR.title;
+  Array.from(document.querySelectorAll('.pn')).forEach(n => { n.textContent = PR.name; });
+  $('specTitle').textContent = 'مواصفات ' + PR.name + ' التي نطبّقها';
+  $('specGrid').innerHTML = PR.specs.map(x => `<div>${x[0]}<b>${x[1]}</b></div>`).join('');
+  $('fpsRow').classList.toggle('hide', !PR.fps60);
+  document.title = 'نقاء · ' + PR.name;
+  $('durNote').textContent = info && info.d > PR.maxDur ? 'المدة (' + fmtT(info.d) + ') أطول من حد ' + PR.name + ' (' + fmtT(PR.maxDur) + ').' : '';
+  try { if (typeof history !== 'undefined' && history.replaceState) history.replaceState(null, '', PR.hash); } catch (e) {}
+}
+$('swTT').onclick = () => applyProfile('tt');
+$('swIG').onclick = () => applyProfile('ig');
+
+applyProfile(typeof location !== 'undefined' && /instagram|ig/i.test(location.hash) ? 'ig' : 'tt');
 
 // ---- Splash ----
 const splash = $('splash'), t0s = Date.now();
