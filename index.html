@@ -118,7 +118,7 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
 <div class="chips"><span>مجاني</span><span>بدون تسجيل</span><span>خصوصية كاملة</span></div>
 </header>
 <div class="grid">
-<div class="card">
+<div class="card" id="dropCard">
   <div id="drop" tabindex="0" role="button" aria-label="اختر فيديو">
     <b>اسحب الفيديو هنا أو اضغط للاختيار</b>
     <span>MP4 · MOV · WebM · الأفضل أقل من 500 ميجا</span>
@@ -128,6 +128,7 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
 <div id="meta" class="card hide">
   <div class="phone"><video id="pv" controls playsinline muted></video></div>
   <div class="info" id="infoGrid"></div>
+  <div id="settings">
   <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
   <label class="row">الجودة
     <select id="mode">
@@ -142,6 +143,7 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
   <label class="row"><input type="checkbox" id="smart" checked> تحليل ذكي (يضبط الجودة حسب المحتوى)</label>
   <p class="note" id="anaNote" style="margin:0 0 10px"></p>
   <button id="go">موافق، ابدأ التحسين</button>
+  </div>
 </div>
 <div id="prog" class="card hide">
   <div class="pct" id="pct">0%</div>
@@ -155,7 +157,7 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
   <div class="info" id="outInfo"></div>
   <div class="phone"><video id="player" controls playsinline></video></div>
   <button id="dl">حفظ الفيديو</button>
-  <button id="again" class="ghost" style="margin-top:12px">فيديو جديد</button>
+  <button id="again" class="ghost" style="margin-top:12px">إضافة فيديو ثاني</button>
 </div>
 </div>
 <section class="info-sec" id="how">
@@ -193,7 +195,7 @@ const fmtMB = b => (b / 1048576).toFixed(1) + ' ميجا';
 const fmtT = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
 const fmtETA = s => s >= 60 ? Math.ceil(s / 60) + ' دقيقة تقريباً' : Math.max(1, Math.ceil(s)) + ' ثانية تقريباً';
 
-let ffmpeg = null, ready = false, file = null, info = null, outURL = null, outName = '', logs = '', pvURL = null, busy = false;
+let fileBlob = null, wake = null, ffmpeg = null, ready = false, file = null, info = null, outURL = null, outName = '', logs = '', pvURL = null, busy = false;
 const blobCache = {};
 
 function setPct(p, label) {
@@ -308,7 +310,7 @@ function probe(f) {
 // Light analysis (8 frames), run only when OK is pressed
 async function analyze(f, d) {
   const v = document.createElement('video');
-  v.muted = true; v.preload = 'auto'; v.src = pvURL;
+  v.muted = true; v.preload = 'auto'; const aURL = URL.createObjectURL(fileBlob); v.src = aURL;
   await withTimeout(new Promise((ok, no) => { v.onloadeddata = ok; v.onerror = no; }), 6000, 'x');
   const W = 96, H = Math.max(2, Math.round(96 * v.videoHeight / v.videoWidth));
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
@@ -323,6 +325,7 @@ async function analyze(f, d) {
     for (let j = 0; j < g.length; j++) g[j] = 0.299 * px[j * 4] + 0.587 * px[j * 4 + 1] + 0.114 * px[j * 4 + 2];
     grays.push(g);
   }
+  URL.revokeObjectURL(aURL);
   let mo = 0, de = 0;
   for (let i = 1; i < N; i++) { let s2 = 0; for (let j = 0; j < grays[i].length; j++) s2 += Math.abs(grays[i][j] - grays[i - 1][j]); mo += s2 / grays[i].length; }
   mo /= N - 1;
@@ -337,24 +340,36 @@ async function analyze(f, d) {
   return { adj, denoise, txt };
 }
 
+const MAX_MB = 450;
+function showErr(t) { $('prog').classList.remove('hide'); $('engErr').textContent = t; $('msg').textContent = ''; $('pct').textContent = '!'; $('fill').style.width = '0%'; $('eta').textContent = ''; }
 async function pick(f) {
-  if (!f || !f.type.startsWith('video/') || busy) return;
-  file = f;
+  if (!f || busy) return;
+  if (!(f.type || '').startsWith('video/') && !/\.(mp4|mov|m4v|webm|mkv|3gp)$/i.test(f.name)) return;
+  if (f.size > MAX_MB * 1048576) { showErr('الملف كبير (' + fmtMB(f.size) + '). الحد الأقصى ' + MAX_MB + ' ميجا لثبات المعالجة داخل المتصفح.'); return; }
+  const my = file = f; fileBlob = null; info = null;
   if (pvURL) URL.revokeObjectURL(pvURL);
   pvURL = URL.createObjectURL(f);
-  try { info = await probe(f); } catch (e) { return alert(e.message); }
-  $('pv').src = pvURL;
-  const kbps = Math.round(f.size * 8 / info.d / 1000);
-  $('infoGrid').innerHTML =
-    `<div>الاسم: <b>${f.name.replace(/[<>&]/g, '')}</b></div>` +
-    `<div>الحجم: <b>${fmtMB(f.size)}</b></div>` +
-    `<div>الدقة: <b>${info.w}×${info.h}</b></div>` +
-    `<div>المدة: <b>${fmtT(info.d)}</b></div>` +
-    `<div>معدل البت: <b>${kbps} kbps</b></div>`;
-  $('anaNote').textContent = '';
-  $('meta').classList.remove('hide');
+  $('engErr').textContent = '';
   ['result', 'prog'].forEach(i => $(i).classList.add('hide'));
-  $('go').disabled = false;
+  $('go').disabled = true; $('go').textContent = 'جارٍ تجهيز الملف…';
+  $('settings').classList.remove('hide'); $('dropCard').classList.remove('hide');
+  $('meta').classList.remove('hide');
+  $('pv').src = pvURL;
+  try { info = await withTimeout(probe(f), 7000, 'x'); } catch (e) { info = null; }
+  $('infoGrid').innerHTML =
+    `<div>الاسم: <b>${f.name.replace(/[<>&]/g, '')}</b></div><div>الحجم: <b>${fmtMB(f.size)}</b></div>` +
+    (info ? `<div>الدقة: <b>${info.w}×${info.h}</b></div><div>المدة: <b>${fmtT(info.d)}</b></div><div>معدل البت: <b>${Math.round(f.size * 8 / info.d / 1000)} kbps</b></div>` : '');
+  $('anaNote').textContent = info ? '' : 'تعذرت معاينة الفيديو في المتصفح، لكن يمكن تحسينه.';
+  try {
+    // Copy the bytes NOW, while the file permission is still valid (Android can revoke it later)
+    const ab = await f.arrayBuffer();
+    if (file !== my) return;
+    fileBlob = new Blob([ab], { type: f.type || 'video/mp4' });
+  } catch (e) {
+    if (file === my) { showErr('تعذرت قراءة الملف من الجهاز. اختر الفيديو من المعرض مرة أخرى، أو انسخه إلى مجلد التنزيلات ثم اخترته.'); $('go').textContent = 'اختر الفيديو من جديد'; }
+    return;
+  }
+  $('go').textContent = 'موافق، ابدأ التحسين'; $('go').disabled = false;
   $('meta').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -379,10 +394,13 @@ function buildFilter() {
 }
 
 $('go').onclick = async () => {
-  if (!file || busy) return;
+  if (file && !fileBlob && !busy) { $('file').click(); return; }
+  if (!file || !fileBlob || busy) return;
   busy = true;
+  try { wake = await navigator.wakeLock.request('screen'); } catch (e) { wake = null; }
   $('go').disabled = true;
   $('engErr').textContent = '';
+  $('settings').classList.add('hide'); $('dropCard').classList.add('hide');
   $('prog').classList.remove('hide');
   $('result').classList.add('hide');
   $('prog').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -395,15 +413,20 @@ $('go').onclick = async () => {
     // 2) light analysis
     setPct(needDl ? 36 : 2, 'تحليل الفيديو…');
     let analysis = null;
-    if ($('smart').checked) { try { analysis = await withTimeout(analyze(file, info.d), 9000, 'x'); $('anaNote').textContent = analysis.txt; } catch (e) {} }
+    if ($('smart').checked && info) { try { analysis = await withTimeout(analyze(file, info.d), 9000, 'x'); $('anaNote').textContent = analysis.txt; } catch (e) {} }
     // 3) encode
     const ext = (file.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4';
     const inName = 'in.' + ext;
     setPct(needDl ? 38 : 4, 'قراءة الملف…');
-    const buf = new Uint8Array(await file.arrayBuffer());
+    const buf = new Uint8Array(await fileBlob.arrayBuffer());
     await ffmpeg.call('write', { path: inName, bytes: buf }, [buf.buffer]);
     logs = '';
     try { await ffmpeg.call('exec', { args: ['-i', inName] }); } catch (e) {}
+    if (!info) {
+      const dm = logs.match(/Video:[^\n]*?,\s*(\d{2,5})x(\d{2,5})/);
+      if (!dm) throw new Error('صيغة الفيديو غير مدعومة.');
+      info = { w: +dm[1], h: +dm[2], d: 0 };
+    }
     const m = logs.match(/(\d+(?:\.\d+)?) fps/);
     const srcFps = m ? parseFloat(m[1]) : 30;
     const target = $('fps60').checked ? Math.min(srcFps, 60) : Math.min(srcFps, 30);
@@ -443,21 +466,32 @@ $('go').onclick = async () => {
     $('saved').textContent = blob.size < file.size ? 'وفّرت ' + Math.round((1 - blob.size / file.size) * 100) + '%' : 'جاهز';
     $('outInfo').innerHTML = `<div>الحجم الجديد: <b>${fmtMB(blob.size)}</b></div><div>الصيغة: <b>H.264 / AAC</b></div>`;
     setPct(100, 'تمت المعالجة'); $('eta').textContent = '';
+    $('meta').classList.add('hide');
     $('result').classList.remove('hide');
     $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
     ffmpeg.call('del', { path: inName }).catch(() => {}); ffmpeg.call('del', { path: 'out.mp4' }).catch(() => {});
   } catch (e) {
-    $('engErr').textContent = 'تعذر الإكمال: ' + (e.message || e);
+    const m = String((e && e.message) || e);
+    $('engErr').textContent = /could not be read|NotReadable/i.test(m) ? 'تعذرت قراءة الملف. اختر الفيديو من جديد.'
+      : /memory|alloc|abort|OOM|out of bounds|unreachable/i.test(m) ? 'الذاكرة لا تكفي لهذا الفيديو. جرّب فيديو أقصر أو أصغر.'
+      : 'تعذر الإكمال: ' + m;
     $('msg').textContent = 'توقفت العملية';
+    $('settings').classList.remove('hide'); $('dropCard').classList.remove('hide');
+    try { ffmpeg && ffmpeg.terminate(); } catch (_) {}
+    ffmpeg = null; ready = false; // fresh engine on the next try (files are cached, no re-download)
   }
+  try { wake && wake.release(); } catch (_) {}
   busy = false; $('go').disabled = false;
 };
 
 $('dl').onclick = () => { const a = document.createElement('a'); a.href = outURL; a.download = outName; a.click(); };
 $('again').onclick = () => {
-  $('file').value = ''; file = null;
+  if (busy) return;
+  $('file').value = ''; file = null; fileBlob = null; info = null;
   ['meta', 'prog', 'result'].forEach(i => $(i).classList.add('hide'));
+  $('settings').classList.remove('hide'); $('dropCard').classList.remove('hide');
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  $('file').click();
 };
 
 // ---- Splash ----
