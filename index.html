@@ -2,7 +2,11 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#131211">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>محسّن فيديوهات تيك توك</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -111,15 +115,73 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
 .specs{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:.88rem;color:var(--mute)}
 .specs b{color:var(--ink);display:block;font-weight:600}
 .specs div{padding:6px 0;border-bottom:1px dashed var(--line)}
+
+/* ---- v7: monitor hero, compare slider, vs section ---- */
+@media (prefers-color-scheme:dark){:root{--bg:#121110;--card:#1b1a18;--line:#2d2b28}}
+.monitor{max-width:460px;margin:22px auto 0;text-align:left;direction:ltr;background:#131211;color:#e9e4dc;border:1px solid #2d2b28;border-radius:16px;padding:14px 16px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.78rem}
+.monitor .mhead{display:flex;align-items:center;gap:8px;letter-spacing:1.4px;color:#9c958b;margin-bottom:10px}
+.monitor .tc{margin-left:auto;color:#e9e4dc}
+.rec{width:9px;height:9px;border-radius:50%;background:#ff3b30;animation:blink 1.2s steps(2) infinite}
+@keyframes blink{50%{opacity:.25}}
+.mrow{display:grid;grid-template-columns:54px 1fr 18px 1fr;gap:6px;align-items:center;padding:6px 0;border-top:1px solid #24221f}
+.mrow span{color:#9c958b}.mrow i{color:#9c958b;font-style:normal;text-align:center}
+.mrow b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .bad{color:#ff7a6b;text-decoration:line-through;text-decoration-color:rgba(255,122,107,.5)}.mrow .good{color:#5be3a6}
+.monitor .cap{margin-top:8px;color:#6f695f;font-size:.7rem;font-family:'IBM Plex Sans Arabic',sans-serif;direction:rtl;text-align:center}
+.vs{display:grid;gap:14px;grid-template-columns:1fr}
+@media (min-width:640px){.vs{grid-template-columns:1fr 1fr}}
+.vs h3{margin:0 0 10px;font-size:1.05rem}.vs ul{margin:0;padding:0 18px 0 0;color:var(--mute);font-size:.93rem}.vs li{margin-bottom:6px}
+.vs .bad{border-color:color-mix(in srgb,var(--err) 40%,var(--line))}.vs .good{border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+.vs .bad h3{color:var(--err)}.vs .good h3{color:var(--ok)}
+.cmp{position:relative;direction:ltr;width:min(100%,300px);aspect-ratio:9/16;margin:8px auto 6px;border-radius:16px;overflow:hidden;background:#000;--p:50%;touch-action:none}
+.cmp canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.cmp .top{position:absolute;inset:0;clip-path:inset(0 calc(100% - var(--p)) 0 0)}
+.cmp .ln{position:absolute;top:0;bottom:0;left:var(--p);width:2px;background:#fff;transform:translateX(-1px);pointer-events:none;box-shadow:0 0 8px rgba(0,0,0,.6)}
+.cmp input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:ew-resize;margin:0}
+.cmp .tag{position:absolute;top:8px;font-size:.72rem;background:rgba(0,0,0,.65);color:#fff;padding:2px 10px;border-radius:12px;pointer-events:none;font-family:'IBM Plex Sans Arabic',sans-serif}
+.ico{font-family:ui-monospace,Menlo,monospace;font-size:1rem!important;letter-spacing:1px}
+
+/* ---- v8: illustrations ---- */
+.tl{margin-bottom:14px}
+.tl .row{margin:10px 0}
+.tl .lb{display:block;font-size:.9rem;font-weight:600;margin-bottom:6px}
+.tl .lb.bad{color:var(--err)}.tl .lb.good{color:var(--ok)}
+.tl svg{width:100%;height:46px;display:block;direction:ltr;background:var(--bg);border-radius:8px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0;font-size:.88rem}
+.flow span.b{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:6px 12px}
+.flow span.b.us{border-color:var(--acc);color:var(--acc);font-weight:700}
+.flow i{font-style:normal;color:var(--mute)}
+.cmp img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+
+
+/* ---- v10: animated platform switch ---- */
+.w{display:inline-block;animation:wordIn .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i) * 80ms)}
+.w.em{background:linear-gradient(90deg,var(--acc),var(--hot));-webkit-background-clip:text;background-clip:text;color:transparent}
+@keyframes wordIn{from{opacity:0;transform:translateY(.6em) scale(.9);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}
+.sp{animation:fadeUp .5s ease both;animation-delay:calc(var(--i) * 45ms)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.mrow .good{transition:color .3s}
+
+/* ---- v12: in-place text wave (no overlay) ---- */
+@property --acc{syntax:'<color>';inherits:true;initial-value:#2f4bff}
+@property --hot{syntax:'<color>';inherits:true;initial-value:#ff2d6f}
+:root{transition:--acc .7s ease,--hot .7s ease}
+.leaving .w,.leaving .sp,.leaving .pn,.leaving #specTitle,.leaving .mrow .good{animation:waveOut .43s cubic-bezier(.5,0,.8,.4) both!important;animation-delay:calc(var(--i,0) * 35ms)!important}
+.leaving .w:nth-child(odd),.leaving .sp:nth-child(odd){--dy:-12px}
+.leaving .w:nth-child(even),.leaving .sp:nth-child(even){--dy:12px}
+@keyframes waveOut{0%{opacity:1;transform:none;filter:none}100%{opacity:0;transform:translateY(var(--dy,-8px)) scale(.96);filter:blur(6px)}}
+.entering .pn,.entering #specTitle{animation:waveIn .7s cubic-bezier(.2,.8,.2,1) both}
+@keyframes waveIn{from{opacity:0;transform:translateY(10px);filter:blur(5px)}to{opacity:1;transform:none;filter:none}}
+.pn{display:inline-block}
 </style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f4bff"/><stop offset="1" stop-color="#ff2d6f"/></linearGradient>
 <symbol id="logo" viewBox="0 0 48 48"><rect width="48" height="48" rx="13" fill="url(#lg)"/><path d="M19 14.5v19l15-9.5z" fill="#fff"/><path d="M10 34c4 3 9 4 14 4" stroke="#fff" stroke-opacity=".5" stroke-width="2.4" stroke-linecap="round" fill="none"/></symbol></defs></svg>
-<div id="splash" aria-hidden="true"><svg><use href="#logo"/></svg><b>نقاء</b><div class="ld"><i></i></div></div>
+<div id="splash" aria-hidden="true"><svg><use href="#logo"/></svg><b>وضّح</b><div class="ld"><i></i></div></div>
 <main>
 <nav>
-<div class="logo"><svg><use href="#logo"/></svg>نقاء</div>
+<div class="logo"><svg><use href="#logo"/></svg>وضّح</div>
 <div class="navlinks"><a href="#how">كيف يعمل</a><a href="#why">المميزات</a><a href="#faq">أسئلة شائعة</a></div>
 </nav>
 <div class="switch" role="tablist" aria-label="المنصة">
@@ -127,9 +189,17 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
 <button id="swIG" role="tab">إنستغرام</button>
 </div>
 <header class="hero">
-<h1 id="hTitle">حسّن الفيديو <em>قبل ما تنشره</em></h1>
+<h1 id="hTitle"></h1>
 <p>ارفع الفيديو، ونجهّزه بأفضل إعدادات <span class="pn">تيك توك</span> بدون ما تخسر الجودة. كل شيء على جهازك.</p>
 <div class="chips"><span>مجاني</span><span>بدون تسجيل</span><span>خصوصية كاملة</span></div>
+<div class="monitor" aria-hidden="true">
+<div class="mhead"><span class="rec"></span>LIVE · QUALITY MONITOR<span class="tc" id="tc">00:00:00</span></div>
+<div class="mrow"><span>FPS</span><b class="bad">VFR</b><i>▸</i><b class="good" id="mFps">CFR 30</b></div>
+<div class="mrow"><span>RES</span><b class="bad">3840×2160</b><i>▸</i><b class="good">1080×1920</b></div>
+<div class="mrow"><span>CODEC</span><b class="bad">HEVC 10-bit</b><i>▸</i><b class="good" id="mCodec">H.264 High@4.2</b></div>
+<div class="mrow"><span>AUDIO</span><b class="bad">VARIABLE</b><i>▸</i><b class="good">AAC 48kHz</b></div>
+<div class="cap">مثال توضيحي لما يحدث للملف أثناء التجهيز</div>
+</div>
 </header>
 <div class="grid">
 <div class="card" id="specCard"><h2 id="specTitle"></h2><div class="specs" id="specGrid"></div></div>
@@ -155,7 +225,6 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
     </select>
   </label>
   <label class="row"><input type="checkbox" id="blurbg" checked> الفيديو الأفقي على خلفية مموّهة بدل القص</label>
-  <label class="row" id="fpsRow"><input type="checkbox" id="fps60"> أبقِ 60 إطار إذا كان الأصل 60</label>
   <label class="row"><input type="checkbox" id="smart" checked> تحليل ذكي (يضبط الجودة حسب المحتوى)</label>
   <p class="note" id="anaNote" style="margin:0 0 10px"></p>
   <button id="go">موافق، ابدأ التحسين</button>
@@ -171,20 +240,31 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
 <div id="result" class="card hide">
   <span class="badge" id="saved"></span>
   <div class="info" id="outInfo"></div>
+  <div id="cmpWrap" class="hide">
+    <h2 style="margin:14px 0 0;text-align:center">قارن: الأصلي والناتج</h2>
+    <div class="cmp" id="cmp"><canvas id="cB" width="360" height="640"></canvas><div class="top"><canvas id="cA" width="360" height="640"></canvas></div><div class="ln"></div><span class="tag" style="left:8px">الأصلي</span><span class="tag" style="right:8px">الناتج</span><input type="range" id="cmpR" min="0" max="100" value="50" aria-label="مقارنة قبل وبعد"></div>
+    <p class="note" style="text-align:center;margin:0 0 10px">اسحب للمقارنة بين لقطة من فيديوك الأصلي ولقطة من الملف الجاهز.</p>
+  </div>
   <div class="phone"><video id="player" controls playsinline></video></div>
   <button id="dl">حفظ الفيديو</button>
   <button id="again" class="ghost" style="margin-top:12px">إضافة فيديو ثاني</button>
 </div>
 </div>
+<section class="info-sec" id="diff">
+<h2>الفرق بين النشر بدون معالجة ومعها</h2>
+<div class="vs">
+<div class="card bad"><h3>بدون معالجة</h3><ul><li>إطارات متغيرة (VFR) قد تتقطع بعد إعادة ترميز المنصة</li><li>دقة أعلى من اللازم (مثل 4K) تُضغط بقوة أكبر</li><li>ترميزات غير موحّدة (HEVC أو 10-bit) قد تُعاد معالجتها أو تُرفض</li><li>صوت بإعدادات متفاوتة</li></ul></div>
+<div class="card good"><h3>مع وضّح</h3><ul><li>إطارات ثابتة (CFR) بنفس سرعة المصدر</li><li>دقة مضبوطة على <span class="pn">تيك توك</span> بدون تكبير أو قص مزعج</li><li>H.264 بمستوى مناسب وألوان قياسية 8-bit</li><li>صوت AAC 48kHz ستيريو وملف MP4 جاهز للرفع</li></ul></div>
+</div></section>
 <section class="info-sec" id="how">
 <h2>كيف يعمل؟</h2>
 <div class="cols">
-<div class="card"><div class="ico">1</div><h3>اختر الفيديو</h3><p>نحلل الدقة والحركة والتفاصيل ونقترح أنسب إعدادات.</p></div>
-<div class="card"><div class="ico">2</div><h3>نحسّنه على جهازك</h3><p>يُعاد ترميزه بصيغة H.264 المناسبة ل<span class="pn">تيك توك</span> دون تكبير الدقة.</p></div>
-<div class="card"><div class="ico">3</div><h3>احفظه وانشره</h3><p>احفظ الفيديو الجاهز وارفعه على <span class="pn">تيك توك</span> بنفسك.</p></div>
+<div class="card"><div class="ico">01</div><h3>اختر الفيديو</h3><p>نحلل الدقة والحركة والتفاصيل ونقترح أنسب إعدادات.</p></div>
+<div class="card"><div class="ico">02</div><h3>نحسّنه على جهازك</h3><p>يُعاد ترميزه بصيغة H.264 المناسبة ل<span class="pn">تيك توك</span> دون تكبير الدقة.</p></div>
+<div class="card"><div class="ico">03</div><h3>احفظه وانشره</h3><p>احفظ الفيديو الجاهز وارفعه على <span class="pn">تيك توك</span> بنفسك.</p></div>
 </div></section>
 <section class="info-sec" id="why">
-<h2>ليش نقاء؟</h2>
+<h2>ليش وضّح؟</h2>
 <div class="cols">
 <div class="card"><div class="ico">🔒</div><h3>فيديوهاتك تبقى عندك</h3><p>لا يُرفع شيء لأي سيرفر، المعالجة داخل المتصفح.</p></div>
 <div class="card"><div class="ico">🎯</div><h3>جودة بدون مبالغة</h3><p>لا نكبّر الدقة ولا نخرّب الصورة، نجهّز الملف فقط.</p></div>
@@ -197,9 +277,9 @@ footer a{color:var(--mute);text-decoration:none}footer a:hover{color:var(--ink)}
 <details><summary>هل الفيديو يطابق متطلبات <span class="pn">تيك توك</span>؟</summary><p>نعم. يخرج دائماً بصيغة H.264 وصوت AAC وألوان قياسية وعدد إطارات ثابت، حتى لو زاد حجم الملف.</p></details>
 </section>
 <footer>
-<div class="logo"><svg><use href="#logo"/></svg>نقاء</div>
+<div class="logo"><svg><use href="#logo"/></svg>وضّح</div>
 <div class="links"><a href="#how">كيف يعمل</a><a href="#faq">الأسئلة الشائعة</a><a href="#">الخصوصية</a><a href="#">الشروط</a><a href="#">تواصل معنا</a></div>
-<div>© 2026 نقاء. جميع الحقوق محفوظة.</div>
+<div>© 2026 وضّح. جميع الحقوق محفوظة.</div>
 </footer>
 </main>
 
@@ -447,7 +527,7 @@ $('go').onclick = async () => {
     }
     const m = logs.match(/(\d+(?:\.\d+)?) fps/);
     const srcFps = m ? parseFloat(m[1]) : 30;
-    const target = Math.min(srcFps, PR.fps60 && $('fps60').checked ? 60 : PR.fps);
+    const target = Math.min(srcFps, PR.fps);
     if (/bt2020|arib-std-b67|smpte2084/.test(logs)) $('anaNote').textContent = 'تنبيه: الفيديو HDR وقد تبدو ألوانه أهدأ بعد التحويل لصيغة تيك توك القياسية.';
     const base = $('mode').value;
     const preset = base === '17' ? 'slow' : base === '19' ? 'medium' : base === '21' ? 'veryfast' : 'ultrafast';
@@ -487,6 +567,7 @@ $('go').onclick = async () => {
     $('meta').classList.add('hide');
     $('result').classList.remove('hide');
     $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    buildCompare();
     ffmpeg.call('del', { path: inName }).catch(() => {}); ffmpeg.call('del', { path: 'out.mp4' }).catch(() => {});
   } catch (e) {
     const m = String((e && e.message) || e);
@@ -513,34 +594,83 @@ $('again').onclick = () => {
 };
 
 
+
+// ---- Before/after compare (real frames from the user's own video) ----
+async function frameInto(url, canvasId, mode) {
+  const v = document.createElement('video');
+  v.muted = true; v.preload = 'auto'; v.src = url;
+  await withTimeout(new Promise((ok, no) => { v.onloadeddata = ok; v.onerror = no; }), 8000, 'x');
+  const seeked = new Promise(r => { v.onseeked = r; });
+  v.currentTime = Math.max(0.05, (v.duration || 2) * 0.4);
+  await Promise.race([seeked, sleep(2500)]);
+  const cv = $(canvasId), cx = cv.getContext('2d'), W = cv.width, H = cv.height;
+  cx.fillStyle = '#000'; cx.fillRect(0, 0, W, H);
+  const vw = v.videoWidth || W, vh = v.videoHeight || H;
+  const k = mode === 'cover' ? Math.max(W / vw, H / vh) : Math.min(W / vw, H / vh);
+  cx.drawImage(v, (W - vw * k) / 2, (H - vh * k) / 2, vw * k, vh * k);
+}
+async function buildCompare() {
+  $('cmpWrap').classList.add('hide');
+  try {
+    await frameInto(URL.createObjectURL(fileBlob), 'cA', 'contain'); // original as it would look
+    await frameInto(outURL, 'cB', 'cover');
+    $('cmpR').value = 50; $('cmp').style.setProperty && $('cmp').style.setProperty('--p', '50%');
+    $('cmpWrap').classList.remove('hide');
+  } catch (e) { /* comparison is optional */ }
+}
+$('cmpR').oninput = e => { $('cmp').style.setProperty && $('cmp').style.setProperty('--p', e.target.value + '%'); };
+let _tc = 0; setInterval(() => { _tc++; $('tc').textContent = '00:' + String(Math.floor(_tc / 60) % 60).padStart(2, '0') + ':' + String(_tc % 60).padStart(2, '0'); }, 1000);
+
+
 // ---- Platform profiles (TikTok / Instagram) ----
 const PROF = {
-  tt: { key: 'tt', name: 'تيك توك', hash: '#tiktok', fps: 30, fps60: true, maxrate: '20M', bufsize: '40M', level: '4.2', crfAdj: 0, suffix: '_tiktok', maxDur: 600,
-    title: 'حسّن الفيديو <em>قبل ما تنشره</em>',
-    specs: [['الترميز', 'H.264 High@4.2'], ['اللون', '8-bit 4:2:0 · bt709'], ['الدقة', '1080×1920 (9:16)'], ['الإطارات', '30 ثابتة (أو 60)'], ['معدل البت', 'حتى 20 Mbps'], ['الصوت', 'AAC-LC 48kHz ستيريو'], ['الحاوية', 'MP4 + faststart'], ['المدة', 'حتى 10 دقائق']] },
-  ig: { key: 'ig', name: 'إنستغرام', hash: '#instagram', fps: 30, fps60: false, maxrate: '12M', bufsize: '24M', level: '4.1', crfAdj: -1, suffix: '_instagram', maxDur: 180,
-    title: 'جهّز ريلز <em>بأعلى جودة</em>',
-    specs: [['الترميز', 'H.264 High@4.1'], ['اللون', '8-bit 4:2:0 · bt709'], ['الدقة', '1080×1920 (9:16)'], ['الإطارات', 'ثابتة، حتى 30'], ['معدل البت', 'حتى 12 Mbps (الموصى 5–12)'], ['الصوت', 'AAC-LC 48kHz ستيريو'], ['الحاوية', 'MP4 + faststart'], ['المدة', 'ريلز حتى 3 دقائق']] }
+  tt: { key: 'tt', name: 'تيك توك', hash: '#tiktok', fps: 60, fpsLabel: 'CFR · نفس المصدر', maxrate: '20M', bufsize: '40M', level: '4.2', crfAdj: 0, suffix: '_tiktok', maxDur: 600,
+    words: [['حسّن', 0], ['الفيديو', 0], ['قبل', 1], ['ما', 1], ['تنشره', 1]],
+    specs: [['الترميز', 'H.264 High@4.2'], ['اللون', '8-bit 4:2:0 · bt709'], ['الدقة', '1080×1920 (9:16)'], ['الإطارات', 'ثابتة بنفس المصدر (حتى 60)'], ['معدل البت', 'حتى 20 Mbps'], ['الصوت', 'AAC-LC 48kHz ستيريو'], ['الحاوية', 'MP4 + faststart'], ['المدة', 'حتى 10 دقائق']] },
+  ig: { key: 'ig', name: 'إنستغرام', hash: '#instagram', fps: 30, fpsLabel: 'CFR 30', maxrate: '12M', bufsize: '24M', level: '4.1', crfAdj: -1, suffix: '_instagram', maxDur: 180,
+    words: [['جهّز', 0], ['ريلز', 0], ['بأعلى', 1], ['جودة', 1]],
+    specs: [['الترميز', 'H.264 High@4.1'], ['اللون', '8-bit 4:2:0 · bt709'], ['الدقة', '1080×1920 (9:16)'], ['الإطارات', 'ثابتة 30 دائماً'], ['معدل البت', 'حتى 12 Mbps (الموصى 5–12)'], ['الصوت', 'AAC-LC 48kHz ستيريو'], ['الحاوية', 'MP4 + faststart'], ['المدة', 'ريلز حتى 3 دقائق']] }
 };
 let P = 'tt';
-function applyProfile(k) {
-  if (!PROF[k] || busy) return;
-  P = k; const PR = PROF[k];
+function scramble(el, to, ms = 520) {
+  const ch = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789#%&@', t0 = Date.now();
+  const iv = setInterval(() => {
+    const p = Math.min(1, (Date.now() - t0) / ms), keep = Math.floor(to.length * p);
+    el.textContent = to.slice(0, keep) + Array.from(to.slice(keep), c => c === ' ' ? ' ' : ch[Math.floor(Math.random() * ch.length)]).join('');
+    if (p >= 1) { clearInterval(iv); el.textContent = to; }
+  }, 32);
+}
+function paint(k) {
+  const PR = PROF[k];
   if (document.documentElement) document.documentElement.dataset.p = k;
   $('swTT').classList.toggle('on', k === 'tt'); $('swIG').classList.toggle('on', k === 'ig');
-  $('hTitle').innerHTML = PR.title;
+  $('hTitle').innerHTML = PR.words.map((x, i) => `<span class="w${x[1] ? ' em' : ''}" style="--i:${i}">${x[0]}</span>`).join(' ');
   Array.from(document.querySelectorAll('.pn')).forEach(n => { n.textContent = PR.name; });
   $('specTitle').textContent = 'مواصفات ' + PR.name + ' التي نطبّقها';
-  $('specGrid').innerHTML = PR.specs.map(x => `<div>${x[0]}<b>${x[1]}</b></div>`).join('');
-  $('fpsRow').classList.toggle('hide', !PR.fps60);
-  document.title = 'نقاء · ' + PR.name;
+  $('specGrid').innerHTML = PR.specs.map((x, i) => `<div class="sp" style="--i:${i}">${x[0]}<b>${x[1]}</b></div>`).join('');
+  document.title = 'وضّح · ' + PR.name;
+  scramble($('mFps'), PR.fpsLabel); scramble($('mCodec'), 'H.264 High@' + PR.level);
   $('durNote').textContent = info && info.d > PR.maxDur ? 'المدة (' + fmtT(info.d) + ') أطول من حد ' + PR.name + ' (' + fmtT(PR.maxDur) + ').' : '';
   try { if (typeof history !== 'undefined' && history.replaceState) history.replaceState(null, '', PR.hash); } catch (e) {}
 }
-$('swTT').onclick = () => applyProfile('tt');
-$('swIG').onclick = () => applyProfile('ig');
+function applyProfile(k, btn, force) {
+  if (!PROF[k] || busy || (!force && k === P)) return;
+  P = k;
+  const calm = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const root = document.documentElement;
+  if (btn && !calm && root && root.classList) {
+    root.classList.add('leaving');                     // old words wave and fade out
+    setTimeout(() => {
+      root.classList.remove('leaving');
+      paint(k);                                        // new words wave in
+      root.classList.add('entering'); setTimeout(() => root.classList.remove('entering'), 900);
+    }, 430);
+  } else paint(k);
+}
+$('swTT').onclick = e => applyProfile('tt', e && e.currentTarget);
+$('swIG').onclick = e => applyProfile('ig', e && e.currentTarget);
 
-applyProfile(typeof location !== 'undefined' && /instagram|ig/i.test(location.hash) ? 'ig' : 'tt');
+applyProfile(typeof location !== 'undefined' && /instagram|ig/i.test(location.hash) ? 'ig' : 'tt', null, true);
 
 // ---- Splash ----
 const splash = $('splash'), t0s = Date.now();
